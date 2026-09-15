@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clockity.app.ui.theme.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Reusable vertical scrollable drum number wheel with haptic tick feedback,
@@ -77,6 +78,7 @@ fun ScrollableNumberWheel(
     val snapFlingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
     val context = LocalContext.current
     val view = LocalView.current
+    val coroutineScope = rememberCoroutineScope()
 
     val vibrator = remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -138,7 +140,11 @@ fun ScrollableNumberWheel(
         if (targetActual != currentActualIndex && !listState.isScrollInProgress) {
             isProgrammaticScroll = true
             try {
-                val diff = targetActual - currentActualIndex
+                var diff = targetActual - currentActualIndex
+                if (isLooping && count > 2) {
+                    if (diff > count / 2) diff -= count
+                    else if (diff < -count / 2) diff += count
+                }
                 val targetVirtual = (currentVirtualIndex + diff).coerceIn(0, totalVirtualItems - 1)
                 listState.animateScrollToItem(targetVirtual)
             } finally {
@@ -150,13 +156,7 @@ fun ScrollableNumberWheel(
 
     Box(
         modifier = modifier
-            .height(itemHeight * visibleItemsCount)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                onClick?.invoke()
-            },
+            .height(itemHeight * visibleItemsCount),
         contentAlignment = Alignment.Center
     ) {
         LazyColumn(
@@ -178,7 +178,26 @@ fun ScrollableNumberWheel(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
                         ) {
-                            onClick?.invoke()
+                            if (virtualIdx != currentVirtualIndex) {
+                                coroutineScope.launch {
+                                    isProgrammaticScroll = true
+                                    try {
+                                        listState.animateScrollToItem(virtualIdx)
+                                    } finally {
+                                        isProgrammaticScroll = false
+                                    }
+                                }
+                                onValueChange(actualIdx)
+                                try {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                        vibrator?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
+                                    } else {
+                                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                    }
+                                } catch (_: Exception) {}
+                            } else {
+                                onClick?.invoke()
+                            }
                         },
                     contentAlignment = Alignment.Center
                 ) {
@@ -844,15 +863,7 @@ fun TimerWheelDurationPicker(
                     ) {
                         // Hours Column (with STATIC "hours" label)
                         Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) {
-                                    focusedField = 0
-                                    isKeyboardMode = true
-                                },
+                            modifier = Modifier.weight(1f),
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -875,21 +886,20 @@ fun TimerWheelDurationPicker(
                                 text = "hours",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = OneUITextPrimary
+                                color = OneUITextPrimary,
+                                modifier = Modifier.clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {
+                                    focusedField = 0
+                                    isKeyboardMode = true
+                                }
                             )
                         }
 
                         // Minutes Column (with STATIC "min" label)
                         Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) {
-                                    focusedField = 1
-                                    isKeyboardMode = true
-                                },
+                            modifier = Modifier.weight(1f),
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -912,21 +922,20 @@ fun TimerWheelDurationPicker(
                                 text = "min",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = OneUITextPrimary
+                                color = OneUITextPrimary,
+                                modifier = Modifier.clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {
+                                    focusedField = 1
+                                    isKeyboardMode = true
+                                }
                             )
                         }
 
                         // Seconds Column (with STATIC "sec" label)
                         Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) {
-                                    focusedField = 2
-                                    isKeyboardMode = true
-                                },
+                            modifier = Modifier.weight(1f),
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -949,7 +958,14 @@ fun TimerWheelDurationPicker(
                                 text = "sec",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = OneUITextPrimary
+                                color = OneUITextPrimary,
+                                modifier = Modifier.clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {
+                                    focusedField = 2
+                                    isKeyboardMode = true
+                                }
                             )
                         }
                     }

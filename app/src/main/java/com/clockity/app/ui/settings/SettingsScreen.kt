@@ -982,7 +982,7 @@ fun LogsViewerDialog(
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 32.dp),
             shape = RoundedCornerShape(24.dp),
             color = OneUIBlack,
             tonalElevation = 6.dp
@@ -990,7 +990,7 @@ fun LogsViewerDialog(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(20.dp)
+                    .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 28.dp)
             ) {
                 // Header
                 Row(
@@ -1280,6 +1280,8 @@ fun LogsViewerDialog(
                         Text("Clear", fontSize = 12.sp)
                     }
                 }
+
+                Spacer(modifier = Modifier.height(14.dp))
             }
         }
     }
