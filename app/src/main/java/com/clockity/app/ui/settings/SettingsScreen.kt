@@ -982,7 +982,7 @@ fun LogsViewerDialog(
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 32.dp),
+                .padding(16.dp),
             shape = RoundedCornerShape(24.dp),
             color = OneUIBlack,
             tonalElevation = 6.dp
@@ -990,7 +990,7 @@ fun LogsViewerDialog(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 28.dp)
+                    .padding(20.dp)
             ) {
                 // Header
                 Row(
@@ -1201,7 +1201,7 @@ fun LogsViewerDialog(
                 // Bottom Action Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // Copy to clipboard
                     Button(
@@ -1212,6 +1212,7 @@ fun LogsViewerDialog(
                             clipboard.setPrimaryClip(clip)
                             Toast.makeText(context, "Logs copied to clipboard", Toast.LENGTH_SHORT).show()
                         },
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = OneUICardElevated,
                             contentColor = OneUITextPrimary
@@ -1225,8 +1226,8 @@ fun LogsViewerDialog(
                             tint = accentColor,
                             modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Copy", fontSize = 12.sp)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Copy", fontSize = 12.sp, maxLines = 1, softWrap = false)
                     }
 
                     // Share logs
@@ -1240,6 +1241,7 @@ fun LogsViewerDialog(
                             }
                             context.startActivity(Intent.createChooser(sendIntent, "Share Clockity Logs"))
                         },
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = OneUICardElevated,
                             contentColor = OneUITextPrimary
@@ -1253,8 +1255,8 @@ fun LogsViewerDialog(
                             tint = OneUITextPrimary,
                             modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Share", fontSize = 12.sp)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Share", fontSize = 12.sp, maxLines = 1, softWrap = false)
                     }
 
                     // Clear logs
@@ -1263,6 +1265,7 @@ fun LogsViewerDialog(
                             AppLogger.clearLogs()
                             Toast.makeText(context, "Logs cleared", Toast.LENGTH_SHORT).show()
                         },
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = OneUIRed.copy(alpha = 0.2f),
                             contentColor = OneUIRed
@@ -1276,12 +1279,12 @@ fun LogsViewerDialog(
                             tint = OneUIRed,
                             modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Clear", fontSize = 12.sp)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Clear", fontSize = 12.sp, maxLines = 1, softWrap = false)
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(18.dp))
             }
         }
     }
