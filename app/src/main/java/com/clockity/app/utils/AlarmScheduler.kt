@@ -8,6 +8,7 @@ import android.os.Build
 import android.util.Log
 import com.clockity.app.data.models.Alarm
 import com.clockity.app.service.AlarmReceiver
+import com.clockity.app.service.NotificationHelper
 import com.clockity.app.service.UpcomingAlarmReceiver
 
 object AlarmScheduler {
@@ -144,8 +145,10 @@ object AlarmScheduler {
     fun cancelAlarm(context: Context, alarmId: Long) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
 
-        // Cancel main alarm
-        val intent = Intent(context, AlarmReceiver::class.java)
+        // Cancel main alarm Intent (action must match scheduled Intent for filterEquals)
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_TRIGGER_ALARM
+        }
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             alarmId.toInt(),
@@ -154,8 +157,10 @@ object AlarmScheduler {
         )
         alarmManager.cancel(pendingIntent)
 
-        // Cancel upcoming notice
-        val upcomingIntent = Intent(context, UpcomingAlarmReceiver::class.java)
+        // Cancel upcoming notice Intent (action must match scheduled Intent for filterEquals)
+        val upcomingIntent = Intent(context, UpcomingAlarmReceiver::class.java).apply {
+            action = UpcomingAlarmReceiver.ACTION_SHOW_UPCOMING
+        }
         val upcomingPendingIntent = PendingIntent.getBroadcast(
             context,
             (alarmId + 5000).toInt(),
@@ -163,6 +168,12 @@ object AlarmScheduler {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         alarmManager.cancel(upcomingPendingIntent)
+
+        // Also cancel any active upcoming notification currently displayed in notification shade
+        try {
+            NotificationHelper.cancelUpcomingAlarmNotification(context, alarmId)
+        } catch (_: Exception) {}
+
         AppLogger.i(TAG, "Cancelled alarm #$alarmId and upcoming notification")
     }
 }

@@ -375,6 +375,12 @@ object NotificationHelper {
         manager.cancel((NOTIFICATION_ID_UPCOMING_BASE + alarmId).toInt())
     }
 
+    fun cancelAlarmRingingNotification(context: Context) {
+        AppLogger.d("NotificationHelper", "Cancelling alarm ringing notification")
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.cancel(NOTIFICATION_ID_ALARM)
+    }
+
     fun showMissedAlarmNotification(context: Context, alarmId: Long, label: String, timeStr: String) {
         createNotificationChannels(context)
         AppLogger.i("NotificationHelper", "showMissedAlarmNotification triggered for alarmId=$alarmId, label='$label', time='$timeStr'")

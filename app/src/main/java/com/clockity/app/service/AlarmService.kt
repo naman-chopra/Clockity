@@ -94,6 +94,16 @@ class AlarmService : Service() {
                 }
                 sendBroadcast(timeoutIntent)
 
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        stopForeground(STOP_FOREGROUND_REMOVE)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        stopForeground(true)
+                    }
+                } catch (_: Exception) {}
+                NotificationHelper.cancelAlarmRingingNotification(this@AlarmService)
+
                 stopSelf()
             }
         }
@@ -106,6 +116,17 @@ class AlarmService : Service() {
         autoTimeoutJob?.cancel()
         SoundUtils.stopAlarm()
         VibrationUtils.stopVibration(this)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+        } catch (_: Exception) {}
+        try {
+            NotificationHelper.cancelAlarmRingingNotification(this)
+        } catch (_: Exception) {}
         try {
             if (wakeLock?.isHeld == true) {
                 wakeLock?.release()

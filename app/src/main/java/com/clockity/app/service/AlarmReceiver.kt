@@ -41,49 +41,68 @@ class AlarmReceiver : BroadcastReceiver() {
 
         when (intent.action) {
             ACTION_TRIGGER_ALARM -> {
-                com.clockity.app.utils.AppLogger.i("AlarmReceiver", "Triggering alarm #$alarmId ($label at $timeStr)")
-
-                // 1. Dismiss any upcoming notification if still hanging
-                try {
-                    NotificationHelper.cancelUpcomingAlarmNotification(context, alarmId)
-                } catch (_: Exception) {}
-
-                // 2. Start Foreground Alarm Service (audio + vibration)
-                try {
-                    val serviceIntent = Intent(context, AlarmService::class.java).apply {
-                        putExtra(EXTRA_ALARM_ID, alarmId)
-                        putExtra(EXTRA_ALARM_LABEL, label)
-                        putExtra(EXTRA_ALARM_TIME, timeStr)
-                        putExtra(EXTRA_GENTLE_WAKE, isGentleWake)
-                        putExtra(EXTRA_VIBRATION_PATTERN, vibrationPattern)
-                    }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        context.startForegroundService(serviceIntent)
-                    } else {
-                        context.startService(serviceIntent)
-                    }
-                } catch (e: Exception) {
-                    com.clockity.app.utils.AppLogger.e("AlarmReceiver", "Failed to start AlarmService, falling back to direct audio", e)
+                val pendingResult = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
                     try {
-                        com.clockity.app.utils.SoundUtils.playAlarm(context, isGentleWake)
-                        com.clockity.app.utils.VibrationUtils.startVibration(context, vibrationPattern)
-                    } catch (_: Exception) {}
-                }
+                        val db = ClockityDatabase.getDatabase(context)
+                        val alarm = if (alarmId != -1L) db.alarmDao().getAlarmById(alarmId) else null
 
-                // 3. Launch Fullscreen Ringing Activity
-                try {
-                    val ringingIntent = Intent(context, AlarmRingingActivity::class.java).apply {
-                        putExtra(EXTRA_ALARM_ID, alarmId)
-                        putExtra(EXTRA_ALARM_LABEL, label)
-                        putExtra(EXTRA_ALARM_TIME, timeStr)
-                        putExtra(EXTRA_SNOOZE_MINUTES, snoozeMinutes)
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                                Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                                Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        // If alarm exists in DB and is disabled, or is null (deleted): skip trigger
+                        if (alarmId != -1L && (alarm == null || !alarm.isEnabled)) {
+                            com.clockity.app.utils.AppLogger.w("AlarmReceiver", "Alarm #$alarmId is null or disabled in database; skipping trigger")
+                            try {
+                                NotificationHelper.cancelUpcomingAlarmNotification(context, alarmId)
+                            } catch (_: Exception) {}
+                            return@launch
+                        }
+
+                        com.clockity.app.utils.AppLogger.i("AlarmReceiver", "Triggering alarm #$alarmId ($label at $timeStr)")
+
+                        // 1. Dismiss any upcoming notification if still hanging
+                        try {
+                            NotificationHelper.cancelUpcomingAlarmNotification(context, alarmId)
+                        } catch (_: Exception) {}
+
+                        // 2. Start Foreground Alarm Service (audio + vibration)
+                        try {
+                            val serviceIntent = Intent(context, AlarmService::class.java).apply {
+                                putExtra(EXTRA_ALARM_ID, alarmId)
+                                putExtra(EXTRA_ALARM_LABEL, label)
+                                putExtra(EXTRA_ALARM_TIME, timeStr)
+                                putExtra(EXTRA_GENTLE_WAKE, isGentleWake)
+                                putExtra(EXTRA_VIBRATION_PATTERN, vibrationPattern)
+                            }
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                context.startForegroundService(serviceIntent)
+                            } else {
+                                context.startService(serviceIntent)
+                            }
+                        } catch (e: Exception) {
+                            com.clockity.app.utils.AppLogger.e("AlarmReceiver", "Failed to start AlarmService, falling back to direct audio", e)
+                            try {
+                                com.clockity.app.utils.SoundUtils.playAlarm(context, isGentleWake)
+                                com.clockity.app.utils.VibrationUtils.startVibration(context, vibrationPattern)
+                            } catch (_: Exception) {}
+                        }
+
+                        // 3. Launch Fullscreen Ringing Activity
+                        try {
+                            val ringingIntent = Intent(context, AlarmRingingActivity::class.java).apply {
+                                putExtra(EXTRA_ALARM_ID, alarmId)
+                                putExtra(EXTRA_ALARM_LABEL, label)
+                                putExtra(EXTRA_ALARM_TIME, timeStr)
+                                putExtra(EXTRA_SNOOZE_MINUTES, snoozeMinutes)
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                            }
+                            context.startActivity(ringingIntent)
+                        } catch (e: Exception) {
+                            com.clockity.app.utils.AppLogger.e("AlarmReceiver", "Failed to start AlarmRingingActivity directly", e)
+                        }
+                    } finally {
+                        pendingResult.finish()
                     }
-                    context.startActivity(ringingIntent)
-                } catch (e: Exception) {
-                    com.clockity.app.utils.AppLogger.e("AlarmReceiver", "Failed to start AlarmRingingActivity directly", e)
                 }
             }
 
@@ -91,6 +110,10 @@ class AlarmReceiver : BroadcastReceiver() {
                 com.clockity.app.utils.AppLogger.i("AlarmReceiver", "Manual dismissal for alarm #$alarmId")
                 // Stop service & sound
                 context.stopService(Intent(context, AlarmService::class.java))
+                NotificationHelper.cancelAlarmRingingNotification(context)
+                if (alarmId != -1L) {
+                    NotificationHelper.cancelUpcomingAlarmNotification(context, alarmId)
+                }
 
                 // Reschedule or disable once-off alarm in database
                 if (alarmId != -1L) {
@@ -112,6 +135,10 @@ class AlarmReceiver : BroadcastReceiver() {
                 com.clockity.app.utils.AppLogger.i("AlarmReceiver", "Snoozing alarm #$alarmId for $snoozeMinutes mins")
                 // Stop current ringing
                 context.stopService(Intent(context, AlarmService::class.java))
+                NotificationHelper.cancelAlarmRingingNotification(context)
+                if (alarmId != -1L) {
+                    NotificationHelper.cancelUpcomingAlarmNotification(context, alarmId)
+                }
 
                 // Schedule snooze
                 if (alarmId != -1L) {

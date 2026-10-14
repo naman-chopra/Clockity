@@ -31,6 +31,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.clockity.app.service.AlarmReceiver
+import com.clockity.app.service.NotificationHelper
 import com.clockity.app.ui.theme.*
 import com.clockity.app.utils.PreferencesManager
 
@@ -86,6 +87,9 @@ class AlarmRingingActivity : ComponentActivity() {
     }
 
     private fun dismissAlarm() {
+        try {
+            NotificationHelper.cancelAlarmRingingNotification(this)
+        } catch (_: Exception) {}
         val dismissIntent = Intent(this, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_DISMISS_ALARM
             putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
@@ -95,6 +99,9 @@ class AlarmRingingActivity : ComponentActivity() {
     }
 
     private fun snoozeAlarm() {
+        try {
+            NotificationHelper.cancelAlarmRingingNotification(this)
+        } catch (_: Exception) {}
         if (snoozeMinutes > 0) {
             val snoozeIntent = Intent(this, AlarmReceiver::class.java).apply {
                 action = AlarmReceiver.ACTION_SNOOZE_ALARM
