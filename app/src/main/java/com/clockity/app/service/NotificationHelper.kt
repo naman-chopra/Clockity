@@ -136,6 +136,18 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val dismissAction = NotificationCompat.Action.Builder(
+            android.R.drawable.ic_menu_close_clear_cancel,
+            "Dismiss",
+            dismissPendingIntent
+        ).setAuthenticationRequired(false).build()
+
+        val snoozeAction = NotificationCompat.Action.Builder(
+            android.R.drawable.ic_popup_reminder,
+            "Snooze",
+            snoozePendingIntent
+        ).setAuthenticationRequired(false).build()
+
         return NotificationCompat.Builder(context, ALARM_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(label.ifBlank { "Alarm" })
@@ -147,8 +159,8 @@ object NotificationHelper {
             .setAutoCancel(false)
             .setContentIntent(fullScreenPendingIntent)
             .setFullScreenIntent(fullScreenPendingIntent, true)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Dismiss", dismissPendingIntent)
-            .addAction(android.R.drawable.ic_popup_reminder, "Snooze", snoozePendingIntent)
+            .addAction(dismissAction)
+            .addAction(snoozeAction)
             .build()
     }
 
@@ -353,6 +365,18 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val snoozeAction = NotificationCompat.Action.Builder(
+            android.R.drawable.ic_popup_reminder,
+            "Snooze (5m)",
+            snoozePendingIntent
+        ).setAuthenticationRequired(false).build()
+
+        val dismissAction = NotificationCompat.Action.Builder(
+            android.R.drawable.ic_menu_close_clear_cancel,
+            "Dismiss Now",
+            dismissPendingIntent
+        ).setAuthenticationRequired(false).build()
+
         val notification = NotificationCompat.Builder(context, UPCOMING_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle("Upcoming alarm: $fullTime")
@@ -361,8 +385,8 @@ object NotificationHelper {
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setContentIntent(openAppPendingIntent)
             .setAutoCancel(true)
-            .addAction(android.R.drawable.ic_popup_reminder, "Snooze (5m)", snoozePendingIntent)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Dismiss Now", dismissPendingIntent)
+            .addAction(snoozeAction)
+            .addAction(dismissAction)
             .build()
 
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
